@@ -1,5 +1,4 @@
-# Fyyur-App
-
+Fyyur
 -----
 
 ### Introduction
