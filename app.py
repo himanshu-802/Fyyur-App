@@ -36,16 +36,17 @@ class Genre(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
-    
+
+venue_genre_table = db.Table('venue_genre_table',
+    db.Column('genre_id', db.Integer, db.ForeignKey('Genre.id'), primary_key=True),
+    db.Column('venue_id', db.Integer, db.ForeignKey('Venue.id'), primary_key=True)
+)     
 artist_genre_table = db.Table('artist_genre_table',
     db.Column('genre_id', db.Integer, db.ForeignKey('Genre.id'), primary_key=True),
     db.Column('artist_id', db.Integer, db.ForeignKey('Artist.id'), primary_key=True)
 )
 
-venue_genre_table = db.Table('venue_genre_table',
-    db.Column('genre_id', db.Integer, db.ForeignKey('Genre.id'), primary_key=True),
-    db.Column('venue_id', db.Integer, db.ForeignKey('Venue.id'), primary_key=True)
-)    
+   
     
 
 
@@ -149,10 +150,7 @@ def venues():
       if (venue.city==loc[0]) and (venue.state==loc[1]):
 
          venue_shows=Show.query.filter_by(venue_id=venue.id).all()
-         num_upcoming_shows=0
-         for show in venue_shows:
-            if show.start_time >datetime.now():
-               num_upcoming_shows += 1
+         num_upcoming_shows=len(Show.query.filter(Show.venue_id==venue.venue_id).filter_(Show.start_time>datetime.now()).all())
          venue_arr.append({
           "id":venue.id,
           "name":venue.name,
@@ -163,22 +161,9 @@ def venues():
       "city":loc[0],
       "state":loc[1],
       "venues":venue_arr
-      })
+    })
 
-  # for area in all_areas:
-  #   area_venues = Venue.query.filter_by(state=area.state).filter_by(city=area.city).all()
-  #   venue_data = []
-  #   for venue in area_venues:
-  #     venue_data.append({
-  #       "id": venue.id,
-  #       "name": venue.name, 
-  #       "num_upcoming_shows": len(db.session.query(Show).filter(Show.venue_id==1).filter(Show.start_time>datetime.now()).all())
-  #     })
-  #   data.append({
-  #     "city": area.city,
-  #     "state": area.state, 
-  #     "venues": venue_data
-  #   })
+  
 
   return render_template('pages/venues.html', areas=data);
 
@@ -188,19 +173,14 @@ def search_venues():
   # seach for Hop should return "The Musical Hop".
   # search for "Music" should return "The Musical Hop" and "Park Square Live Music & Coffee"
    search_term = request.form.get('search_term', '')
-   venues = Venue.query.filter(Venue.name.ilike('%' + search_term + '%')).all()
+   venues = db.session.query(Venue).filter(Venue.name.ilike('%' + search_term + '%')).all()
    venue_arr=[]
 
    for i in venues:
-      query2=Show.query.filter_by(venue_id=i.id).all()
-      cnt=0
-      for j in query2:
-        if show.start_time> datetime.now():
-           cnt+=1
       venue_arr.append({
         "id":i.id,
         "name":i.name,
-        "num_upcoming_shows":cnt
+        "num_upcoming_shows":len(db.session.query(Show).filter(Show.venue_id==i.venue_id).filter(Show.start_time>datetime.now()).all())
       })
    
 
@@ -471,11 +451,7 @@ def search_artists():
     now = datetime.now()
     for artist in artists:
         artist_shows = Show.query.filter_by(artist_id=artist.id).all()
-        num_upcoming = 0
-        for show in artist_shows:
-            if show.start_time > now:
-                num_upcoming += 1
-
+        num_upcoming =  len(db.session.query(Show).filter(Show.artist_id == result.id).filter(Show.start_time > datetime.now()).all())
         artist_list.append({
             "id": artist.id,
             "name": artist.name,
